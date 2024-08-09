@@ -1,0 +1,565 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: http://localhost:3005
+    description: Generated server url
+paths:
+  /api/task/add:
+    put:
+      summary: Создание новой задачи
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: createTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    actor:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                - $ref: '#/components/schemas/Task'
+
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                  - $ref: '#/components/schemas/TaskResponce'
+  /api/comment:
+    get:
+      summary: Получение конкретного комментария по Id
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с комментариями
+      operationId: getCommentById
+      parameters:
+        - name: commentId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+    post:
+      summary: Добавление нового комментария к задаче
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с комментариями
+      operationId: addComment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+    delete:
+      summary: Удаление своего комментария
+      description: Удалить комментарий может, только его владелец
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с комментариями
+      operationId: deleteComment
+      parameters:
+        - name: commentId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/auth/register:
+    post:
+      summary: Регистрация пользователя
+      tags:
+        - Регистрация и авторизация
+      operationId: postRegister
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "User registration success"
+  /api/auth/login:
+    post:
+      summary: Аутентификация пользователя
+      tags:
+        - Регистрация и авторизация
+      operationId: postLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                emai:
+                  type: string
+                password:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccessTokenResponse'
+                  - $ref: '#/components/schemas/RefreshTokenResponse'
+  /api/auth/jwt/refresh:
+    post:
+      summary: Обновление Access JWT токена
+      description: Для того чтобы обновить Access JWT токен необходимо указать Refresh токен
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Регистрация и авторизация
+      operationId: refreshToken
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccessTokenResponse'
+  /api/task/edit:
+    patch:
+      summary: Изменение задачи
+      description: Изменение задачи может сделать только ее владелец.
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: editTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    actor:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                - $ref: '#/components/schemas/Task'
+                - type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/TaskResponce'
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+  /api/task/edit/status:
+    patch:
+      summary: Изменение статуса задачи
+      description: Изменение статуса задачи могут делать как исполнитель, так и создатель задачи.
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: editStatusTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum:
+                    - WAITING
+                    - PROCESSING
+                    - DONE
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponce'
+  /api/user/all:
+    get:
+      summary: Список всех пользователей
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Просмотр пользователей
+      operationId: viewAllUsers
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageUser'
+  /api/user/:
+    get:
+      summary: Просмотр конкретного пользователя
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Просмотр пользователей
+      operationId: viewUserById
+      parameters:
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /api/task/todo:
+    get:
+      summary: Просмотр списка задач к выполнению
+      description: Если не указан userId, то показываются задачи пользователя, которому принадлежит аутентификационный токен.
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: getTodoTasks
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTask'
+  /api/task/owner:
+    get:
+      summary: Просмотр списка созданных задач
+      description: Если не указан userId, то показываются задачи пользователя, которому принадлежит аутентификационный токен.
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: getCreatedTasks
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTask'
+  /api/task/all:
+    get:
+      summary: Просмотр всех существующих задач
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: getAllTasks
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    $ref: '#/components/schemas/PageObject'
+                  content:
+                    $ref: '#/components/schemas/Task'
+  /api/comment/all:
+    get:
+      summary: Просмотр всех комментариев к задаче
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с комментариями
+      operationId: getCommentsByTask
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageComment'
+  /api/task/delete:
+    delete:
+      summary: Удаление своей задачи
+      description: Удалить задачу может, только ее владелец
+      security:
+        - BearerJWT: [ ]
+      tags:
+        - Взаимодействие с задачами
+      operationId: deleteTask
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - WAITING
+            - PROCESSING
+            - DONE
+        priority:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+    TaskResponce:
+      allOf:
+        - type: object
+          properties:
+            actor:
+              $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            owner:
+              $ref: '#/components/schemas/User'
+        - $ref: '#/components/schemas/Task'
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        owner:
+          $ref: '#/components/schemas/User'
+        time:
+          type: string
+          format: date-time
+        text:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    SignUpRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+    PageUser:
+      type: object
+      properties:
+
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        page:
+          $ref: '#/components/schemas/PageObject'
+    PageTask:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskResponce'
+        page:
+          $ref: '#/components/schemas/PageObject'
+    PageComment:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        page:
+          $ref: '#/components/schemas/PageObject'
+    PageObject:
+      type: object
+      properties:
+        size:
+          type: integer
+          format: int32
+        number:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+    AddCommentRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        comment:
+          type: object
+          properties:
+            text:
+              type: string
+    AccessTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJraWQiOiJiNjE3Njg1MC1hMjQ0LTQyMWQtOWViZi03MmI5OTQ0ZWZlZGYiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnbHVwcGlAZ21haWwuY29tIiwiZXhwIjoxNzIzMTAzMDMwLCJpYXQiOjE3MjMxMDI0MzAsImp0aSI6ImI2MTc2ODUwLWEyNDQtNDIxZC05ZWJmLTcyYjk5NDRlZmVkZiIsImF1dGhvcml0aWVzIjpbXX0.sattedJM7eIJOv8zp_c3vOemcmNLIV_Qphu66VOH-Pk"
+        accessTokenExpiry:
+          type: string
+          format: date-time
+          example: "2024-08-08T07:43:50.924229400Z"
+    RefreshTokenResponse:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJraWQiOiJiNjE3Njg1MC1hMjQ0LTQyMWQtOWViZi03MmI5OTQ0ZWZlZGYiLCJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiZGlyIn0..X7oMxIl4ks4eRErl.4Iw0m8bSi9Yq3U7DrCN5_Br8BHgcy8cqnBfxOUz4prtddx1xVqYWCzBd3qsr_6yjHYyQ7z-bE0yUaZy_dU9hrKa1qDceJj7LvD_AxvbiBtTHmwxKiljSPt8-utlhEQ1SVP7htFVR2pG-rFZ9M0pv8HAIgLIbVumCKmP7p4Qp_Hryh9RoK7XRkR8y2AkNgR9EgwFQEg.ENBfFuuFCgezn1gXj8Yu7w"
+        refreshTokenExpiry:
+          type: string
+          format: date-time
+          example: "2024-08-09T07:33:50.924229400Z"
+  securitySchemes:
+    BearerJWT: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'JWT токен'

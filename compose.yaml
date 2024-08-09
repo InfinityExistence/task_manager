@@ -1,0 +1,19 @@
+name: task
+volumes:
+  task_data:
+services:
+  database:
+    restart: always
+    image: postgres
+    env_file: task_database.env
+    volumes:
+      - task_data:/var/lib/postgresql/data
+  manager:
+    restart: always
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - '3005:3005'
+    depends_on:
+      - database
+    env_file: task_manager.env
